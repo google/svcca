@@ -19,8 +19,8 @@ limitations under the License.
 
 This repository contains the core code for implementing Canonical Correlation Analysis on deep neural network representations, which was used for the results in the paper:
 
-[Raghu M](http://maithraraghu.com/) [Gilmer J](https://scholar.google.com/citations?user=Ml_vQ8MAAAAJ&hl=en) [Yosinski J](http://yosinski.com/) [Sohl-Dickstein J](http://www.sohldickstein.com/)
-["SVCCA: Singular Vector Canonical Correlation Analysis for Deep Learning Dynamics and Interpretability"](https://arxiv.org/abs/1706.05806)
+[Raghu M](http://maithraraghu.com/) [Gilmer J](https://scholar.google.com/citations?user=Ml_vQ8MAAAAJ&hl=en) [Yosinski J](http://yosinski.com/) [Sohl-Dickstein J](http://www.sohldickstein.com/)(2017).
+["SVCCA: Singular Vector Canonical Correlation Analysis for Deep Learning Dynamics and Interpretability"](https://arxiv.org/abs/1706.05806). Neural Information Processing Systems (NIPS) 2017.
 
 
 ### Dependencies
