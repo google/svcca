@@ -50,10 +50,10 @@ In the paper, we apply this method to understand several aspects of neural netwo
     <img src="examples/dynamics_plots_crop.png" width=700px>
 </p>
 
-* __Model Interpretability across Training Runs__: The code can also be used to interpret representations learned by networks over different training runs. We apply CCA to corresponding layers across different random initializations. Note that the raw neuron outputs over the sorted classes (left pane) don't have any visible similarity, but the aligned representations with CCA show that both networks have learned similar latent representations (right pane below).
+* __Model Interpretability across Training Runs__: The code can also be used to interpret representations learned by networks over different training runs. We apply CCA to corresponding layers across different random initializations. Note that the raw neuron outputs over the sorted classes (top pane below) don't have any visible similarity, but the aligned representations with CCA show that both networks have learned similar latent representations (bottom pane below).
 <p align="center">
-    <img src="examples/Interpretability_Highest_Activations.png" width=500px>
-    <img src="examples/Interpretability_Top_CCAs.png" width=500px>
+    <img src="examples/Interpretability_Highest_Activations.png" width=300px>
+    <img src="examples/Interpretability_Top_CCAs.png" width=300px>
 </p>
 
 
