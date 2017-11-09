@@ -40,16 +40,21 @@ very good results (see Examples section).
 
 ### Examples
 In the paper, we apply this method to understand several aspects of neural network representations, and we give a couple of examples below.
-* Sensitivity to different classes: we compare the CCA similarity of an output neuron corresponding to a particular class with the representations learned in intermediate layers on the Imagenet Resnet. We find that CCA similarity can distinguish between visually different classes (firetruck and dog breeds in the image below) and also show similarities between visually similar classes (husky and eskimo dog, two types of terriers). 
+* __Sensitivity to different classes__: we compare the CCA similarity of an output neuron corresponding to a particular class with the representations learned in intermediate layers on the Imagenet Resnet. We find that CCA similarity can distinguish between visually different classes (firetruck and dog breeds in the image below) and also show similarities between visually similar classes (husky and eskimo dog, two types of terriers). 
 <p align="center">
     <img src="examples/Imagenet_class_similarity.png" width=700px>
 </p>
 
-* Learning Dynamics: we also compare all pairs of layers in a neural network across time, ending up with pane plots showing how the _representational similarity_ of different layers evolves with time. We find evidence of a _bottom up_ convergence pattern. Layers closer to the input solidify to their final representations first, before layers higher up in the network. This comparison method also highlights other structure properties of the architecture. We see (below top row) that 2x2 blocks are caused by batch norm layers, which are representationally identical to the previous layer. We also see that residual layers (bottom row) result in grid like patterns, having higher representational similarity with previous layers.
+* __Learning Dynamics__: we also compare all pairs of layers in a neural network across time, ending up with pane plots showing how the _representational similarity_ of different layers evolves with time. We find evidence of a _bottom up_ convergence pattern. Layers closer to the input solidify to their final representations first, before layers higher up in the network. This comparison method also highlights other structure properties of the architecture. We see (below top row) that 2x2 blocks are caused by batch norm layers, which are representationally identical to the previous layer. We also see that residual layers (bottom row) result in grid like patterns, having higher representational similarity with previous layers.
 <p align="center">
     <img src="examples/dynamics_plots_crop.png" width=700px>
 </p>
 
+* __Model Interpretability across Training Runs__: The code can also be used to interpret representations learned by networks over different training runs. We apply CCA to corresponding layers across different random initializations. Note that the raw neuron outputs over the sorted classes (left pane) don't have any visible similarity, but the aligned representations with CCA show that both networks have learned similar latent representations (right pane below).
+<p align="center">
+    <img src="examples/Interpretability_Highest_Activations.png" width=500px>
+    <img src="examples/Interpretability_Top_CCAs.png" width=500px>
+</p>
 
 
 
