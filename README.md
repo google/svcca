@@ -27,12 +27,12 @@ This repository contains the core code for implementing Canonical Correlation An
 This code was written in Python 2.7 and relies on the numpy and pandas modules
 
 ### Usage
-The main function to compute CCA similarities between two representations is the `get_cca_similarity` function in [cca_core.py](cca_core.py). This takes in two arrays of shape (num neurons1, num datapoints) , (num neurons2, num_datapoints),
+The main function to compute CCA similarities between two representations is the `get_cca_similarity` function in [cca_core.py](cca_core.py). This takes in two arrays of shape (num neurons1, num datapoints), (num neurons2, num_datapoints),
 and outputs pairs of aligned directions, how well aligned they are, as well as coefficients to transform from the original neuron basis to the aligned directions.
 
 The [dft_ccas.py](dft_ccas.py) module builds on this functionality to work with convolutional networks. Convolutional layers have a more natural basis in terms of the number of channels, not raw neurons. Using some of the mathematical properties
 of the Discrete Fourier Transform, we have a computationally efficient method for comparing CCA similarity for convolutional layers. See Section 3 in the [paper](https://arxiv.org/pdf/1706.05806.pdf) for more details. The `fourier_ccas` function in
-[dft_ccas.py](dft_ccas.py) implements exactly this, taking the raw convolutional activations (num datapoints, height1, width1, num channels1), (num datapoints, height2, width2, num channels2)
+[dft_ccas.py](dft_ccas.py) implements exactly this, taking the raw convolutional activations (num datapoints, height1, width1, num channels1), (num datapoints, height2, width2, num channels2).
 
 Note that according to the theory, we get an exact result if the datapoints used to _generate_ (not train) the activations are translation invariant (any 2d translation of a datapoint x is also in the set of datapoints). But even without this, we can get 
 very good results (see Examples section).
