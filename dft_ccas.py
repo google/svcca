@@ -1,11 +1,11 @@
 # Copyright 2016 Google Inc.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,7 +23,7 @@ height1, width1, num_channels1, [dataset_size, height2, width2, num_channels2]
 and computes the cca similarity between them. The results are exact
 when the dataset over which correlations are computed is translation invariant.
 
-However, due to the strided nature of convolutional and pooling layers, image 
+However, due to the strided nature of convolutional and pooling layers, image
 datasets are close to translation invariant, and very good results can still
 be achieved without taking correlations over a translation invariant dataset.
 
@@ -31,7 +31,7 @@ See https://arxiv.org/abs/1706.05806 for details.
 
 This function can also be used to compute cca similarity between conv
 layers and fully connected layers (or neurons). We may want to compare
-similarity between convolutional feature maps at a layer and a particular class. 
+similarity between convolutional feature maps at a layer and a particular class.
 Again assuming
 translation invariance of the original dataset, the fourier_ccas function can
 be used for this (reshaping the vector to be (dataset_size, 1, 1, 1)), and will
@@ -143,7 +143,7 @@ def fourier_ccas(conv_acts1, conv_acts2, return_coefs=False,
   for i in xrange(height):
     for j in xrange(width):
       results_dict = cca_core.get_cca_similarity(
-          fft_acts1[:, i, j, :].T, fft_acts2[:, i, j, :].T, compute_dirns,
+          fft_acts1[:, i, j, :].T, fft_acts2[:, i, j, :].T, compute_dirns=compute_dirns,
                                                             verbose=verbose)
 
       # apply inverse FFT to get coefficients and directions if specified
