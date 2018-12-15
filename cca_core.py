@@ -1,4 +1,4 @@
-# Copyright 2016 Google Inc.
+# Copyright 2018 Google Inc.
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,7 +26,10 @@ applied used on fully connected networks. For convolutional layers, the 3d block
 of neurons can either be flattened entirely, along channels, or alternatively,
 the dft_ccas (Discrete Fourier Transform) module can be used.
 
-See https://arxiv.org/abs/1706.05806 for full details.
+See:
+https://arxiv.org/abs/1706.05806
+https://arxiv.org/abs/1806.05759
+for full details.
 
 """
 
@@ -36,8 +39,6 @@ from __future__ import print_function
 import numpy as np
 
 num_cca_trials = 5
-epsilon = 1e-6
-
 
 def positivedef_matrix_sqrt(array):
   """Stable method for computing matrix square roots, supports complex matrices.
@@ -87,11 +88,12 @@ def remove_small(sigma_xx, sigma_xy, sigma_yx, sigma_yy, threshold=1e-6):
   sigma_yx_crop = sigma_yx[y_idxs][:, x_idxs]
   sigma_yy_crop = sigma_yy[y_idxs][:, y_idxs]
 
-  return (sigma_xx_crop, sigma_xy_crop, sigma_yx_crop, sigma_yy_crop, x_idxs,
-          y_idxs)
+  return (sigma_xx_crop, sigma_xy_crop, sigma_yx_crop, sigma_yy_crop,
+          x_idxs, y_idxs)
 
 
-def compute_ccas(sigma_xx, sigma_xy, sigma_yx, sigma_yy, verbose=True):
+def compute_ccas(sigma_xx, sigma_xy, sigma_yx, sigma_yy, epsilon,
+                 verbose=True):
   """Main cca computation function, takes in variances and crossvariances.
 
   This function takes in the covariances and cross covariances of X, Y,
@@ -108,6 +110,7 @@ def compute_ccas(sigma_xx, sigma_xy, sigma_yx, sigma_yy, verbose=True):
                       crossvariance matrix for x,y (conj) transpose of sigma_xy
             sigma_yy: 2d numpy array, (num_neurons_y, num_neurons_y)
                       variance matrix for y
+            epsilon:  small float to help with stabilizing computations
             verbose:  boolean on whether to print intermediate outputs
 
   Returns:
@@ -126,8 +129,8 @@ def compute_ccas(sigma_xx, sigma_xy, sigma_yx, sigma_yy, verbose=True):
             y_idxs:       Same as above but for sigma_yy
   """
 
-  (sigma_xx, sigma_xy, sigma_yx, sigma_yy, x_idxs, y_idxs) = remove_small(
-      sigma_xx, sigma_xy, sigma_yx, sigma_yy)
+  (sigma_xx, sigma_xy, sigma_yx, sigma_yy,
+   x_idxs, y_idxs) = remove_small(sigma_xx, sigma_xy, sigma_yx, sigma_yy)
 
   numx = sigma_xx.shape[0]
   numy = sigma_yy.shape[0]
@@ -138,8 +141,8 @@ def compute_ccas(sigma_xx, sigma_xy, sigma_yx, sigma_yy, verbose=True):
 
   if verbose:
     print("adding eps to diagonal and taking inverse")
-  sigma_xx +=epsilon * np.eye(numx)
-  sigma_yy +=epsilon * np.eye(numy)
+  sigma_xx += epsilon * np.eye(numx)
+  sigma_yy += epsilon * np.eye(numy)
   inv_xx = np.linalg.pinv(sigma_xx)
   inv_yy = np.linalg.pinv(sigma_yy)
 
@@ -150,26 +153,16 @@ def compute_ccas(sigma_xx, sigma_xy, sigma_yx, sigma_yy, verbose=True):
 
   if verbose:
     print("dot products...")
-  arr_x = np.dot(sigma_yx, invsqrt_xx)
-  arr_x = np.dot(inv_yy, arr_x)
-  arr_x = np.dot(invsqrt_xx, np.dot(sigma_xy, arr_x))
-  arr_y = np.dot(sigma_xy, invsqrt_yy)
-  arr_y = np.dot(inv_xx, arr_y)
-  arr_y = np.dot(invsqrt_yy, np.dot(sigma_yx, arr_y))
+  arr = np.dot(invsqrt_xx, np.dot(sigma_xy, invsqrt_yy))
 
   if verbose:
     print("trying to take final svd")
-  arr_x_stable = arr_x + epsilon * np.eye(arr_x.shape[0])
-  arr_y_stable = arr_y + epsilon * np.eye(arr_y.shape[0])
-  ux, sx, vx = np.linalg.svd(arr_x_stable)
-  uy, sy, vy = np.linalg.svd(arr_y_stable)
+  u, s, v = np.linalg.svd(arr)
 
-  sx = np.sqrt(np.abs(sx))
-  sy = np.sqrt(np.abs(sy))
   if verbose:
     print("computed everything!")
 
-  return [ux, sx, vx], [uy, sy, vy], invsqrt_xx, invsqrt_yy, x_idxs, y_idxs
+  return [u, np.abs(s), v], invsqrt_xx, invsqrt_yy, x_idxs, y_idxs
 
 
 def sum_threshold(array, threshold):
@@ -189,7 +182,7 @@ def sum_threshold(array, threshold):
   assert (threshold >= 0) and (threshold <= 1), "print incorrect threshold"
 
   for i in xrange(len(array)):
-    if np.sum(array[:i]) / np.sum(array) >= threshold:
+    if np.sum(array[:i])/np.sum(array) >= threshold:
       return i
 
 
@@ -221,7 +214,9 @@ def create_zero_dict(compute_dirns, dimension):
   return return_dict
 
 
-def get_cca_similarity(acts1, acts2, threshold=0.98, compute_dirns=True,
+def get_cca_similarity(acts1, acts2, epsilon=0., threshold=0.98,
+                       compute_coefs=True,
+                       compute_dirns=False,
                        verbose=True):
   """The main function for computing cca similarities.
 
@@ -238,16 +233,23 @@ def get_cca_similarity(acts1, acts2, threshold=0.98, compute_dirns=True,
                    can have different numbers of neurons, but must agree on the
                    number of datapoints
 
+            epsilon: small float to help stabilize computations
+
             threshold: float between 0, 1 used to get rid of trailing zeros in
                        the cca correlation coefficients to output more accurate
                        summary statistics of correlations.
+
+
+            compute_coefs: boolean value determining whether coefficients
+                           over neurons are computed. Needed for computing
+                           directions
 
             compute_dirns: boolean value determining whether actual cca
                            directions are computed. (For very large neurons and
                            datasets, may be better to compute these on the fly
                            instead of store in memory.)
 
-            verbose: Boolean, whether info about intermediate outputs printed
+            verbose: Boolean, whether intermediate outputs are printed
 
   Returns:
             return_dict: A dictionary with outputs from the cca computations.
@@ -269,6 +271,7 @@ def get_cca_similarity(acts1, acts2, threshold=0.98, compute_dirns=True,
 
   # compute covariance with numpy function for extra stability
   numx = acts1.shape[0]
+  numy = acts2.shape[0]
 
   covariance = np.cov(acts1, acts2)
   sigmaxx = covariance[:numx, :numx]
@@ -284,32 +287,55 @@ def get_cca_similarity(acts1, acts2, threshold=0.98, compute_dirns=True,
   sigmaxy /= np.sqrt(xmax * ymax)
   sigmayx /= np.sqrt(xmax * ymax)
 
-  ([_, sx, vx], [_, sy, vy], invsqrt_xx, invsqrt_yy, x_idxs,
-   y_idxs) = compute_ccas(sigmaxx, sigmaxy, sigmayx, sigmayy,
-                          verbose)
+  ([u, s, v], invsqrt_xx, invsqrt_yy,
+   x_idxs, y_idxs) = compute_ccas(sigmaxx, sigmaxy, sigmayx, sigmayy,
+                                  epsilon=epsilon,
+                                  verbose=verbose)
 
   # if x_idxs or y_idxs is all false, return_dict has zero entries
   if (not np.any(x_idxs)) or (not np.any(y_idxs)):
     return create_zero_dict(compute_dirns, acts1.shape[1])
 
+  if compute_coefs:
+    return_dict["neuron_coeffs1"] = np.dot(invsqrt_xx, u)
+    return_dict["neuron_coeffs2"] = np.dot(invsqrt_yy, v.T)
+
+    # also compute full coefficients over all neurons
+    x_mask = np.dot(x_idxs.reshape((-1, 1)), x_idxs.reshape((1, -1)))
+    y_mask = np.dot(y_idxs.reshape((-1, 1)), y_idxs.reshape((1, -1)))
+
+    return_dict["full_coeffs1"] = np.zeros((numx, numx))
+    np.place(return_dict["full_coeffs1"], x_mask,
+             return_dict["neuron_coeffs1"])
+
+    return_dict["full_coeffs2"] = np.zeros((numy, numy))
+    np.place(return_dict["full_coeffs2"], y_mask,
+             return_dict["neuron_coeffs2"])
+
+    # compute means
+    neuron_means1 = np.mean(acts1, axis=1, keepdims=True)
+    neuron_means2 = np.mean(acts2, axis=1, keepdims=True)
+    return_dict["neuron_means1"] = neuron_means1
+    return_dict["neuron_means2"] = neuron_means2
+
   if compute_dirns:
     # orthonormal directions that are CCA directions
-    cca_dirns1 = np.dot(vx, np.dot(invsqrt_xx, acts1[x_idxs]))
-    cca_dirns2 = np.dot(vy, np.dot(invsqrt_yy, acts2[y_idxs]))
+    cca_dirns1 = np.dot(return_dict["full_coeffs1"],
+                        (acts1 - neuron_means1)) + neuron_means1
+    cca_dirns2 = np.dot(return_dict["full_coeffs2"],
+                        (acts2 - neuron_means2)) + neuron_means2
 
   # get rid of trailing zeros in the cca coefficients
-  idx1 = sum_threshold(sx, threshold)
-  idx2 = sum_threshold(sy, threshold)
+  idx1 = sum_threshold(s, threshold)
+  idx2 = sum_threshold(s, threshold)
 
-  return_dict["neuron_coeffs1"] = np.dot(vx, invsqrt_xx)
-  return_dict["neuron_coeffs2"] = np.dot(vy, invsqrt_yy)
-  return_dict["cca_coef1"] = sx
-  return_dict["cca_coef2"] = sy
+  return_dict["cca_coef1"] = s
+  return_dict["cca_coef2"] = s
   return_dict["x_idxs"] = x_idxs
   return_dict["y_idxs"] = y_idxs
   # summary statistics
-  return_dict["mean"] = (np.mean(sx[:idx1]), np.mean(sy[:idx2]))
-  return_dict["sum"] = (np.sum(sx), np.sum(sy))
+  return_dict["mean"] = (np.mean(s[:idx1]), np.mean(s[:idx2]))
+  return_dict["sum"] = (np.sum(s), np.sum(s))
 
   if compute_dirns:
     return_dict["cca_dirns1"] = cca_dirns1
@@ -318,7 +344,8 @@ def get_cca_similarity(acts1, acts2, threshold=0.98, compute_dirns=True,
   return return_dict
 
 
-def robust_cca_similarity(acts1, acts2, threshold=0.98, compute_dirns=True):
+def robust_cca_similarity(acts1, acts2, threshold=0.98, epsilon=1e-6,
+                          compute_dirns=True):
   """Calls get_cca_similarity multiple times while adding noise.
 
   This function is very similar to get_cca_similarity, and can be used if
@@ -337,6 +364,8 @@ def robust_cca_similarity(acts1, acts2, threshold=0.98, compute_dirns=True):
             threshold: float between 0, 1 used to get rid of trailing zeros in
                        the cca correlation coefficients to output more accurate
                        summary statistics of correlations.
+
+            epsilon: small float to help stabilize computations
 
             compute_dirns: boolean value determining whether actual cca
                            directions are computed. (For very large neurons and
@@ -358,8 +387,8 @@ def robust_cca_similarity(acts1, acts2, threshold=0.98, compute_dirns=True):
     try:
       return_dict = get_cca_similarity(acts1, acts2, threshold, compute_dirns)
     except np.LinAlgError:
-      acts1 = acts1 * 1e-1 + np.random.normal(size=acts1.shape) * epsilon
-      acts2 = acts2 * 1e-1 + np.random.normal(size=acts1.shape) * epsilon
+      acts1 = acts1*1e-1 + np.random.normal(size=acts1.shape)*epsilon
+      acts2 = acts2*1e-1 + np.random.normal(size=acts1.shape)*epsilon
       if trial + 1 == num_cca_trials:
         raise
 
