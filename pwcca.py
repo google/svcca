@@ -37,13 +37,23 @@ def compute_pwcca(acts1, acts2, epsilon=0.):
 
     """
     sresults = cca_core.get_cca_similarity(acts1, acts2, epsilon=epsilon, 
-					   compute_dirns=True, compute_coefs=True, verbose=False)
-    P1, _ = np.linalg.qr(sresults["cca_dirns1"].T)
-    P2, _ = np.linalg.qr(sresults["cca_dirns2"].T)
-    weights1 = np.sum(np.abs(np.dot(P1.T, acts1.T)), axis=1)
-    weights2 = np.sum(np.abs(np.dot(P2.T, acts2.T)), axis=1)
-    weights1 = weights1/np.sum(weights1)
-    weights2 = weights2/np.sum(weights2)
+					   compute_dirns=False, compute_coefs=True, verbose=False)
+    if np.sum(sresults["x_idxs"]) <= np.sum(sresults["y_idxs"]):
+        dirns = np.dot(sresults["coef_x"], 
+                    (acts1[sresults["x_idxs"]] - \
+                     sresults["neuron_means1"])) + sresults["neuron_means1"]
+        coefs = sresults["cca_coef1"]
+        acts = acts1
+        idxs = sresults["x_idxs"]
+    else:
+        dirns = np.dot(sresults["coef_y"], 
+                    (acts1[sresults["y_idxs"]] - \
+                     sresults["neuron_means2"])) + sresults["neuron_means2"]
+        coefs = sresults["cca_coef2"]
+        acts = acts2
+        idxs = sresults["y_idxs"]
+    P, _ = np.linalg.qr(dirns.T)
+    weights = np.sum(np.abs(np.dot(P.T, acts[idxs].T)), axis=1)
+    weights = weights/np.sum(weights)
     
-    return np.sum(weights1*sresults["cca_coef1"]), np.sum(weights2*sresults["cca_coef2"]), \
-            np.mean(sresults["cca_coef1"]), np.mean(sresults["cca_coef2"])
+    return np.sum(weights*coefs), weights, coefs 

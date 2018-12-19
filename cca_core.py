@@ -57,7 +57,7 @@ def positivedef_matrix_sqrt(array):
   return sqrtarray
 
 
-def remove_small(sigma_xx, sigma_xy, sigma_yx, sigma_yy, threshold=1e-6):
+def remove_small(sigma_xx, sigma_xy, sigma_yx, sigma_yy, epsilon):
   """Takes covariance between X, Y, and removes values of small magnitude.
 
   Args:
@@ -66,7 +66,7 @@ def remove_small(sigma_xx, sigma_xy, sigma_yx, sigma_yy, threshold=1e-6):
             sigma_yx: 2d numpy array, crossvariance matrixy for x,y,
                       (conjugate) transpose of sigma_xy
             sigma_yy: 2d numpy array, variance matrix for y
-            threshold: cutoff value for norm below which directions are thrown
+            epsilon : cutoff value for norm below which directions are thrown
                        away
 
   Returns:
@@ -80,8 +80,8 @@ def remove_small(sigma_xx, sigma_xy, sigma_yx, sigma_yy, threshold=1e-6):
 
   x_diag = np.abs(np.diagonal(sigma_xx))
   y_diag = np.abs(np.diagonal(sigma_yy))
-  x_idxs = (x_diag >= threshold)
-  y_idxs = (y_diag >= threshold)
+  x_idxs = (x_diag >= epsilon)
+  y_idxs = (y_diag >= epsilon)
 
   sigma_xx_crop = sigma_xx[x_idxs][:, x_idxs]
   sigma_xy_crop = sigma_xy[x_idxs][:, y_idxs]
@@ -130,7 +130,7 @@ def compute_ccas(sigma_xx, sigma_xy, sigma_yx, sigma_yy, epsilon,
   """
 
   (sigma_xx, sigma_xy, sigma_yx, sigma_yy,
-   x_idxs, y_idxs) = remove_small(sigma_xx, sigma_xy, sigma_yx, sigma_yy)
+   x_idxs, y_idxs) = remove_small(sigma_xx, sigma_xy, sigma_yx, sigma_yy, epsilon)
 
   numx = sigma_xx.shape[0]
   numy = sigma_yy.shape[0]
@@ -181,7 +181,7 @@ def sum_threshold(array, threshold):
   """
   assert (threshold >= 0) and (threshold <= 1), "print incorrect threshold"
 
-  for i in xrange(len(array)):
+  for i in range(len(array)):
     if np.sum(array[:i])/np.sum(array) >= threshold:
       return i
 
@@ -297,32 +297,42 @@ def get_cca_similarity(acts1, acts2, epsilon=0., threshold=0.98,
     return create_zero_dict(compute_dirns, acts1.shape[1])
 
   if compute_coefs:
-    return_dict["neuron_coeffs1"] = np.dot(invsqrt_xx, u)
-    return_dict["neuron_coeffs2"] = np.dot(invsqrt_yy, v.T)
-
+    
     # also compute full coefficients over all neurons
     x_mask = np.dot(x_idxs.reshape((-1, 1)), x_idxs.reshape((1, -1)))
     y_mask = np.dot(y_idxs.reshape((-1, 1)), y_idxs.reshape((1, -1)))
 
-    return_dict["full_coeffs1"] = np.zeros((numx, numx))
-    np.place(return_dict["full_coeffs1"], x_mask,
-             return_dict["neuron_coeffs1"])
-
-    return_dict["full_coeffs2"] = np.zeros((numy, numy))
-    np.place(return_dict["full_coeffs2"], y_mask,
-             return_dict["neuron_coeffs2"])
+    return_dict["coef_x"] = u.T
+    return_dict["invsqrt_xx"] = invsqrt_xx
+    return_dict["full_coef_x"] = np.zeros((numx, numx))
+    np.place(return_dict["full_coef_x"], x_mask,
+             return_dict["coef_x"])
+    return_dict["full_invsqrt_xx"] = np.zeros((numx, numx))
+    np.place(return_dict["full_invsqrt_xx"], x_mask,
+             return_dict["invsqrt_xx"])
+    
+    return_dict["coef_y"] = v
+    return_dict["invsqrt_yy"] = invsqrt_yy
+    return_dict["full_coef_y"] = np.zeros((numy, numy))
+    np.place(return_dict["full_coef_y"], y_mask,
+             return_dict["coef_y"])
+    return_dict["full_invsqrt_yy"] = np.zeros((numy, numy))
+    np.place(return_dict["full_invsqrt_yy"], y_mask,
+             return_dict["invsqrt_yy"])
 
     # compute means
-    neuron_means1 = np.mean(acts1, axis=1, keepdims=True)
-    neuron_means2 = np.mean(acts2, axis=1, keepdims=True)
+    neuron_means1 = np.mean(acts1, axis=0, keepdims=True)
+    neuron_means2 = np.mean(acts2, axis=0, keepdims=True)
     return_dict["neuron_means1"] = neuron_means1
     return_dict["neuron_means2"] = neuron_means2
 
   if compute_dirns:
     # orthonormal directions that are CCA directions
-    cca_dirns1 = np.dot(return_dict["full_coeffs1"],
+    cca_dirns1 = np.dot(np.dot(return_dict["full_coef_x"],
+                               return_dict["full_invsqrt_xx"]),
                         (acts1 - neuron_means1)) + neuron_means1
-    cca_dirns2 = np.dot(return_dict["full_coeffs2"],
+    cca_dirns2 = np.dot(np.dot(return_dict["full_coef_y"],
+                               return_dict["full_invsqrt_yy"]),
                         (acts2 - neuron_means2)) + neuron_means2
 
   # get rid of trailing zeros in the cca coefficients
@@ -383,7 +393,7 @@ def robust_cca_similarity(acts1, acts2, threshold=0.98, epsilon=1e-6,
                          computed.
   """
 
-  for trial in xrange(num_cca_trials):
+  for trial in range(num_cca_trials):
     try:
       return_dict = get_cca_similarity(acts1, acts2, threshold, compute_dirns)
     except np.LinAlgError:

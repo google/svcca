@@ -21,7 +21,7 @@ using numpy. Written to apply to neural network activations.
 
 import numpy as np
 
-def pca_core(acts, n_components, compute_dirns=False):
+def get_pca(acts, compute_dirns=False):
     """ Takes in neuron activations acts and number of components.
     Returns principle components and associated eigenvalues.
 
@@ -36,17 +36,16 @@ def pca_core(acts, n_components, compute_dirns=False):
                                            "by datapoints")
 
     # center activations
-    means = np.mean(acts, axis=1, keepdims=True)
+    means = np.mean(acts, axis=0, keepdims=True)
     cacts = acts - means
     
     # compute PCA using SVD
     U, S, V = np.linalg.svd(cacts, full_matrices=False)
-    S = np.abs(S)
     
     return_dict = {}
-    return_dict["eigenvals"]  = S[:n_components]
-    return_dict["neuron_coefs"] = U.T[:n_components]
+    return_dict["eigenvals"]  = S
+    return_dict["neuron_coefs"] = U.T
     if compute_dirns:
-        return_dict["pca_dirns"] = np.dot(U.T[:n_components], cacts) + np.dot(U.T[:n_components], means)
+        return_dict["pca_dirns"] = np.dot(U.T, cacts) + means 
 
     return return_dict
