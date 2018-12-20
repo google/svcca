@@ -69,8 +69,7 @@ If you use this code, please consider citing either or both of the following pap
     url = {http://papers.nips.cc/paper/7188-svcca-singular-vector-canonical-correlation-analysis-for-deep-learning-dynamics-and-interpretability.pdf}
     }
 
-
-
+<!-- comment to break blocks -->
 
     @incollection{NIPS2018_7815,
     title = {Insights on representational similarity in neural networks with canonical correlation},
