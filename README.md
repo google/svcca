@@ -64,12 +64,11 @@ In both papers, we studied the per-layer learning dynamics: how different layers
 <p align="center">
     <img src="examples/dynamics_plots_crop.png" width=700px>
 </p>
-<p align="left">
-    <img src="examples/PTB_Learning_Dynamics_CCA_Similarity-1.png" width=300px>
+<p align="center">
+<img src="examples/PTB_Learning_Dynamics_CCA_Similarity-1.png" width=400px>
+<img src="examples/WT2_Deeper_LSTM_Learning_Dynamics_CCA_Similarity-1.png" width=400px>
 </p>
-<p align="right">
-    <img src="examples/WT2_Deeper_LSTM_Learning_Dynamics_CCA_Similarity-1.png" width=300px>
-</p>
+
 The figures above show results for conv/resnets and language models on PTB and WikiText-2. This method also highlights other structural properties of the architecture. The 2x2 blocks in the conv net are caused by batch norm layers, which are representationally identical to the previous layer. We also see that residual layers in the resnet create grid like patterns, having higher representational similarity with previous layers.
 
 #### Generalizing and Memorizing Networks
