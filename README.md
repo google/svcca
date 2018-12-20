@@ -1,7 +1,7 @@
 
 Disclaimer: This is not an official Google product.
 
-Copyright 2017 Google Inc.
+Copyright 2018 Google Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,46 +15,73 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-## SVCCA for Deep Learning Dynamics and Interpretability
+## (SV)CCA for Representational Insights in Deep Neural Networks
 
-This repository contains the core code for implementing Canonical Correlation Analysis on deep neural network representations, which was used for the results in the paper:
+This repository contains code and [jupyter notebook tutorials](https://github.com/google/svcca/tree/master/tutorials) on results in the following papers, as well as suggested extensions and open problems.
+1. ["SVCCA: Singular Vector Canonical Correlation Analysis for Deep Learning Dynamics and Interpretability"](https://arxiv.org/abs/1706.05806). _Neural Information Processing Systems (NeurIPS) 2017_
+2. ["Insights on Representational Similarity in Deep Neural Networks with Canonical Correlation"](https://arxiv.org/abs/1806.05759). _Neural Information Processing Systems (NeurIPS) 2018_
 
-[Maithra Raghu](http://maithraraghu.com/), [Justin Gilmer](https://scholar.google.com/citations?user=Ml_vQ8MAAAAJ&hl=en), [Jason Yosinski](http://yosinski.com/), [Jascha Sohl-Dickstein](http://www.sohldickstein.com/) (2017).
-["SVCCA: Singular Vector Canonical Correlation Analysis for Deep Learning Dynamics and Interpretability"](https://arxiv.org/abs/1706.05806). Neural Information Processing Systems (NIPS) 2017.
+If you use this code, please consider citing
+
+`
+@incollection{NIPS2017_7188,
+title = {SVCCA: Singular Vector Canonical Correlation Analysis for Deep Learning Dynamics and Interpretability},
+author = {Raghu, Maithra and Gilmer, Justin and Yosinski, Jason and Sohl-Dickstein, Jascha},
+booktitle = {Advances in Neural Information Processing Systems 30},
+editor = {I. Guyon and U. V. Luxburg and S. Bengio and H. Wallach and R. Fergus and S. Vishwanathan and R. Garnett},
+pages = {6076--6085},
+year = {2017},
+publisher = {Curran Associates, Inc.},
+url = {http://papers.nips.cc/paper/7188-svcca-singular-vector-canonical-correlation-analysis-for-deep-learning-dynamics-and-interpretability.pdf}
+}
+`
+
+`
+@incollection{NIPS2018_7815,
+title = {Insights on representational similarity in neural networks with canonical correlation},
+author = {Morcos, Ari and Raghu, Maithra and Bengio, Samy},
+booktitle = {Advances in Neural Information Processing Systems 31},
+editor = {S. Bengio and H. Wallach and H. Larochelle and K. Grauman and N. Cesa-Bianchi and R. Garnett},
+pages = {5732--5741},
+year = {2018},
+publisher = {Curran Associates, Inc.},
+url = {http://papers.nips.cc/paper/7815-insights-on-representational-similarity-in-neural-networks-with-canonical-correlation.pdf}
+}
+`
+
+### Code Structure and Usage
+The [tutorials](https://github.com/google/svcca/tree/master/tutorials) overview all of the main scripts, provide an example implementation of SVCCA, and also discuss existing applications and new directions. 
+
+The main script is [cca_core](https://github.com/google/svcca/blob/master/cca_core.py) which can be used to compute CCA between two neural networks and outputs both the CCA correlation coefficients as well as the CCA directions. The CCA for Conv Layers tutorial outlines applications to convolutional layers.
+
+Aside from this main script, implementations of _Partial Least Squares_, [numpy_pls.py](https://github.com/google/svcca/blob/master/numpy_pls.py) and PCA, [numpy_pca.py](https://github.com/google/svcca/blob/master/numpy_pca.py) are also provided. These methods are overviewed in the Other Methods Tutorial.
 
 
-### Dependencies
-This code was written in Python 2.7 and relies on the numpy and pandas modules
+### Results from the Papers
 
-### Usage
-The main function to compute CCA similarities between two representations is the `get_cca_similarity` function in [cca_core.py](cca_core.py). This takes in two arrays of shape (num neurons1, num datapoints) , (num neurons2, num_datapoints),
-and outputs pairs of aligned directions, how well aligned they are, as well as coefficients to transform from the original neuron basis to the aligned directions.
+#### Learning Dynamics
+In both papers, we studied the per-layer learning dynamics: how different layers in a network converge through training. For both convolutional networks and recurrent neural networks, we found that lower layers tend to converge faster than higher layers. This means that not all layers need to be trained all the way through training. We can save ccomputation and prevent overfitting by consecutively freezing layers -- _freeze training_. Preliminary experiments support the effectiveness of freeze training, but there are many open questions (different architectures, varying learning rates) to explore further. 
+<p align="center">
+    <img src="examples/dynamics_plots_crop.png" width=700px>
+</p>
+<p align="left">
+    <img src="examples/PTB_Learning_Dynamics_CCA_Similarity-1.png" width=300px>
+</p>
+<p align="right">
+    <img src="examples/WT2_Deeper_LSTM_Learning_Dynamics_CCA_Similarity-1.png" width=300px>
+</p>
+The figures above show results for conv/resnets and language models on PTB and WikiText-2. This method also highlights other structural properties of the architecture. The 2x2 blocks in the conv net are caused by batch norm layers, which are representationally identical to the previous layer. We also see that residual layers in the resnet create grid like patterns, having higher representational similarity with previous layers.
 
-The [dft_ccas.py](dft_ccas.py) module builds on this functionality to work with convolutional networks. Convolutional layers have a more natural basis in terms of the number of channels, not raw neurons. Using some of the mathematical properties
-of the Discrete Fourier Transform, we have a computationally efficient method for comparing CCA similarity for convolutional layers. See Section 3 in the [paper](https://arxiv.org/pdf/1706.05806.pdf) for more details. The `fourier_ccas` function in
-[dft_ccas.py](dft_ccas.py) implements exactly this, taking the raw convolutional activations (num datapoints, height1, width1, num channels1), (num datapoints, height2, width2, num channels2)
-
-Note that according to the theory, we get an exact result if the datapoints used to _generate_ (not train) the activations are translation invariant (any 2d translation of a datapoint x is also in the set of datapoints). But even without this, we can get 
-very good results (see Examples section).
+#### Generalizing and Memorizing Networks
+Following the experiment proposed in [Zhang et. al](https://arxiv.org/abs/1611.03530) we trained networks as normal on CIFAR-10 (generalizing networks), and on a fixed permutation of labels on CIFAR-10 (memorizing networks.) We then applied (PW)CCA to measure the layerwise similarity between (1) the group of generalizing networks (2) the group of memorizing networks (3) between generalizing and memorizing networks. In earlier layers, all three groups are about at similar. In higher (deeper) layers however, we see that (1) is much more similar than (2). Interestingly, (3) is _as similar as_ (2) -- surprising as the two sets of networks are trained on different tasks! 
 
 
-### Examples
-In the paper, we apply this method to understand several aspects of neural network representations, and we give a couple of examples below.
-* __Sensitivity to different classes__: we compare the CCA similarity of an output neuron corresponding to a particular class with the representations learned in intermediate layers on the Imagenet Resnet. We find that CCA similarity can distinguish between visually different classes (firetruck and dog breeds in the image below) and also show similarities between visually similar classes (husky and eskimo dog, two types of terriers). 
+#### Interpreting the Latent Representations
+While most of the results so far have focused on comparing two layers with CCA, we can also use it to compare the similarity between an intermediate vector, and a ground truth output vector, corresponding to a particular class. We perform this experiment with a subset of Imagenet classes (firetruck, husky, eskimo dog, two terriers) on the Imagenet Resnet. CCA similarity highlights differences between classes that are easier to learn -- learned much earlier in the network -- (e.g. firetruck) and harder classes, only learned much later on (e.g. husky). 
 <p align="center">
     <img src="examples/Imagenet_class_similarity.png" width=700px>
 </p>
 
-* __Learning Dynamics__: we also compare all pairs of layers in a neural network across time, ending up with pane plots showing how the _representational similarity_ of different layers evolves with time. We find evidence of a _bottom up_ convergence pattern. Layers closer to the input solidify to their final representations first, before layers higher up in the network. This comparison method also highlights other structure properties of the architecture. We see (below top row) that 2x2 blocks are caused by batch norm layers, which are representationally identical to the previous layer. We also see that residual layers (bottom row) result in grid like patterns, having higher representational similarity with previous layers.
-<p align="center">
-    <img src="examples/dynamics_plots_crop.png" width=700px>
-</p>
-
-* __Model Interpretability across Training Runs__: The code can also be used to interpret representations learned by networks over different training runs. We apply CCA to corresponding layers across different random initializations. Note that the raw neuron outputs over the sorted classes (left pane below) don't have any visible similarity, but the aligned representations with CCA show that both networks have learned similar latent representations (right pane below). Furthermore these directions are also somewhat naturally interpretable. The grey dotted lines represent different class boundaries, and we can see that the top CCA directions clearly turn on for certain classes and off for others.
-<p align="center">
-    <img src="examples/Interpretability_Highest_Activations.png" width=300px>
-    <img src="examples/Interpretability_Top_CCAs.png" width=300px>
-</p>
 
 
 
