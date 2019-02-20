@@ -36,7 +36,7 @@ def get_pca(acts, compute_dirns=False):
                                            "by datapoints")
 
     # center activations
-    means = np.mean(acts, axis=0, keepdims=True)
+    means = np.mean(acts, axis=1, keepdims=True)
     cacts = acts - means
     
     # compute PCA using SVD

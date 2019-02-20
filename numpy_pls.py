@@ -87,8 +87,8 @@ def get_pls_similarity(acts1, acts2):
   S = np.abs(S)
   
   # compute means 
-  neuron_means1 = np.mean(acts1, axis=0, keepdims=True)
-  neuron_means2 = np.mean(acts2, axis=0, keepdims=True)
+  neuron_means1 = np.mean(acts1, axis=1, keepdims=True)
+  neuron_means2 = np.mean(acts2, axis=1, keepdims=True)
     
   # collect return values
   return_dict = {}

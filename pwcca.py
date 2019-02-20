@@ -41,14 +41,14 @@ def compute_pwcca(acts1, acts2, epsilon=0.):
     if np.sum(sresults["x_idxs"]) <= np.sum(sresults["y_idxs"]):
         dirns = np.dot(sresults["coef_x"], 
                     (acts1[sresults["x_idxs"]] - \
-                     sresults["neuron_means1"])) + sresults["neuron_means1"]
+                     sresults["neuron_means1"][sresults["x_idxs"]])) + sresults["neuron_means1"][sresults["x_idxs"]]
         coefs = sresults["cca_coef1"]
         acts = acts1
         idxs = sresults["x_idxs"]
     else:
         dirns = np.dot(sresults["coef_y"], 
                     (acts1[sresults["y_idxs"]] - \
-                     sresults["neuron_means2"])) + sresults["neuron_means2"]
+                     sresults["neuron_means2"][sresults["y_idxs"]])) + sresults["neuron_means2"][sresults["y_idxs"]]
         coefs = sresults["cca_coef2"]
         acts = acts2
         idxs = sresults["y_idxs"]
