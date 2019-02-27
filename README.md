@@ -32,7 +32,7 @@ Aside from this main script, implementations of _Partial Least Squares_, [numpy_
 ### Results from the Papers
 
 #### Learning Dynamics
-In both papers, we studied the per-layer learning dynamics: how different layers in a network converge through training. For both convolutional networks and recurrent neural networks, we found that lower layers tend to converge faster than higher layers. This means that not all layers need to be trained all the way through training. We can save ccomputation and prevent overfitting by consecutively freezing layers -- _freeze training_. Preliminary experiments support the effectiveness of freeze training, but there are many open questions (different architectures, varying learning rates) to explore further. 
+In both papers, we studied the per-layer learning dynamics: how different layers in a network converge through training. For both convolutional networks and recurrent neural networks, we found that lower layers tend to converge faster than higher layers. This means that not all layers need to be trained all the way through training. We can save computation and prevent overfitting by consecutively freezing layers -- _freeze training_. Preliminary experiments support the effectiveness of freeze training, but there are many open questions (different architectures, varying learning rates) to explore further. 
 <p align="center">
     <img src="examples/dynamics_plots_crop.png" width=700px>
 </p>
@@ -41,7 +41,7 @@ In both papers, we studied the per-layer learning dynamics: how different layers
 <img src="examples/WT2_Deeper_LSTM_Learning_Dynamics_CCA_Similarity-1.png" width=400px>
 </p>
 
-The figures above show results for conv/resnets and language models on PTB and WikiText-2. This method also highlights other structural properties of the architecture. The 2x2 blocks in the conv net are caused by batch norm layers, which are representationally identical to the previous layer. We also see that residual layers in the resnet create grid like patterns, having higher representational similarity with previous layers.
+The figures above show results for conv/resnets and language models on PTB and WikiText-2. This method also highlights other structural properties of the architecture. The 2x2 blocks in the conv net are caused by batch norm layers, which are representationally identical to the previous layer. We also see that residual layers in the resnet create grid-like patterns, having higher representational similarity with previous layers.
 
 #### Generalizing and Memorizing Networks
 Following the experiment proposed in [Zhang et. al](https://arxiv.org/abs/1611.03530) we trained networks as normal on CIFAR-10 (generalizing networks), and on a fixed permutation of labels on CIFAR-10 (memorizing networks.) We then applied (PW)CCA to measure the layerwise similarity between (1) the group of generalizing networks (2) the group of memorizing networks (3) between generalizing and memorizing networks. In earlier layers, all three groups are about at similar. In higher (deeper) layers however, we see that (1) is much more similar than (2). Interestingly, (3) is _as similar as_ (2) -- surprising as the two sets of networks are trained on different tasks!
