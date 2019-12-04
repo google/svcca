@@ -136,7 +136,7 @@ def compute_ccas(sigma_xx, sigma_xy, sigma_yx, sigma_yy, epsilon,
   numy = sigma_yy.shape[0]
 
   if numx == 0 or numy == 0:
-    return ([0, 0, 0], [0, 0, 0], np.zeros_like(sigma_xx),
+    return ([0, 0, 0], np.zeros_like(sigma_xx),
             np.zeros_like(sigma_yy), x_idxs, y_idxs)
 
   if verbose:
@@ -294,7 +294,16 @@ def get_cca_similarity(acts1, acts2, epsilon=0., threshold=0.98,
 
   # if x_idxs or y_idxs is all false, return_dict has zero entries
   if (not np.any(x_idxs)) or (not np.any(y_idxs)):
-    return create_zero_dict(compute_dirns, acts1.shape[1])
+    return_dict = create_zero_dict(compute_dirns, acts1.shape[1])
+    return_dict["x_idxs"] = np.zeros(acts1.shape[0], dtype=int)
+    return_dict["y_idxs"] = np.zeros(acts2.shape[0], dtype=int)
+    return_dict["coef_x"] = u#.T
+    return_dict["coef_y"] = v
+    neuron_means1 = np.mean(acts1, axis=1, keepdims=True)
+    neuron_means2 = np.mean(acts2, axis=1, keepdims=True)
+    return_dict["neuron_means1"] = neuron_means1
+    return_dict["neuron_means2"] = neuron_means2
+    return return_dict
 
   if compute_coefs:
     
