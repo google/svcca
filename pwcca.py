@@ -22,8 +22,9 @@ for full details.
 
 """
 
-import numpy as np
 import cca_core
+import numpy as np
+
 
 def compute_pwcca(acts1, acts2, epsilon=0.):
     """ Computes projection weighting for weighting CCA coefficients 
@@ -36,24 +37,24 @@ def compute_pwcca(acts1, acts2, epsilon=0.):
 	 Original cca coefficient mean and weighted mean
 
     """
-    sresults = cca_core.get_cca_similarity(acts1, acts2, epsilon=epsilon, 
-					   compute_dirns=False, compute_coefs=True, verbose=False)
+    sresults = cca_core.get_cca_similarity(acts1, acts2, epsilon=epsilon,
+                                           compute_dirns=False, compute_coefs=True, verbose=False)
     if np.sum(sresults["x_idxs"]) <= np.sum(sresults["y_idxs"]):
-        dirns = np.dot(sresults["coef_x"], 
-                    (acts1[sresults["x_idxs"]] - \
-                     sresults["neuron_means1"][sresults["x_idxs"]])) + sresults["neuron_means1"][sresults["x_idxs"]]
-        coefs = sresults["cca_coef1"]
         acts = acts1
         idxs = sresults["x_idxs"]
+        coefs_z = sresults["coef_x"]
+        neuron_means = sresults["neuron_means1"]
+        coefs = sresults["cca_coef1"]
     else:
-        dirns = np.dot(sresults["coef_y"], 
-                    (acts1[sresults["y_idxs"]] - \
-                     sresults["neuron_means2"][sresults["y_idxs"]])) + sresults["neuron_means2"][sresults["y_idxs"]]
-        coefs = sresults["cca_coef2"]
         acts = acts2
         idxs = sresults["y_idxs"]
+        coefs_z = sresults["coef_y"]
+        neuron_means = sresults["neuron_means2"]
+        coefs = sresults["cca_coef2"]
+
+    dirns = np.dot(coefs_z, (acts[idxs] - neuron_means[idxs])) + neuron_means[idxs]
     P, _ = np.linalg.qr(dirns.T)
     weights = np.sum(np.abs(np.dot(P.T, acts[idxs].T)), axis=1)
-    weights = weights/np.sum(weights)
-    
-    return np.sum(weights*coefs), weights, coefs 
+    weights = weights / np.sum(weights)
+
+    return np.sum(weights * coefs), weights, coefs
