@@ -15,6 +15,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
+## Install
+```
+pip install -U git+https://github.com/google/svcca
+```
+
 ## (SV)CCA for Representational Insights in Deep Neural Networks
 
 This repository contains code and [jupyter notebook tutorials](https://github.com/google/svcca/tree/master/tutorials) on results in the following papers, as well as suggested extensions and open problems.
